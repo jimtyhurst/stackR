@@ -1,0 +1,37 @@
+---
+title: "Exploratory Data Analysis"
+author: "[Jim Tyhurst](https://www.jimtyhurst.com/)"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    toc: true
+numbersections: true
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+&#x1F53B;&nbsp;_Work in Process_ ...&nbsp;&#x1F53A;
+
+Source code at: [EDA.Rmd](../vignettes/EDA.Rmd)
+
+## Configuration
+```{r}
+library(stackR)
+library(glue)
+library(tidyverse)
+library(lubridate)
+```
+
+## Data preparation
+
+TBD ...
+

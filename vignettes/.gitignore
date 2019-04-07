@@ -1,0 +1,3 @@
+# Ignores intermediate generated files.
+*.R
+
