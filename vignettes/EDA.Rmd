@@ -13,6 +13,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
+library(knitr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -27,6 +28,7 @@ Source code at: [EDA.Rmd](../vignettes/EDA.Rmd)
 ```{r, 'package-dependencies', message=FALSE}
 library(stackR)
 library(readr)
+library(forcats)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -135,6 +137,9 @@ The [following query](https://data.stackexchange.com/stackoverflow/query/1029995
 
 ```sql
 -- Duplicate pairs of questions related to a tag.
+-- Derived from Jordan Witte's query:
+--   https://data.stackexchange.com/stackoverflow/query/1029675/duplicate-pairs
+--   https://github.com/Eric-D-Stevens/Data_Science_Meetup_April/blob/master/sql/basic_fetch_duplicate_pairs.sql
 
 DECLARE @PageSize int = ##PageSize##
 DECLARE @PageNumber int = ##PageNumber##
@@ -208,5 +213,52 @@ I used this query to download duplicates for 6 of the [25 most popular programmi
 * R
 
 ## Exploratory analysis of duplicates
+
+### Percentage of duplicates by language
+
+```{r reads_pcts}
+raw_pcts <- system.file(
+    "extdata", 
+    "duplicates-totals-pct.csv", 
+    package = "stackR"
+  ) %>% 
+  readr::read_csv() %>% 
+  dplyr::mutate(pct_duplicates = (duplicate_posts / total_posts) * 100.0) %>% 
+  dplyr::arrange(desc(pct_duplicates))
+kable(raw_pcts, digits = 2)
+```
+
+
+```{r sorts_pcts}
+# Need to sort the language factor by the percentage before plotting.
+sorted_pcts <- raw_pcts %>% 
+  dplyr::mutate(
+    sorted_language = forcats::fct_reorder(
+      language, 
+      pct_duplicates, 
+      .desc = TRUE
+    )
+  )
+  
+sorted_pcts %>%
+  ggplot(aes(x = sorted_language, y = pct_duplicates)) +
+    geom_col() +
+  scale_y_continuous(
+    limits = c(0, 15), 
+    minor_breaks = seq(0, 15, by = 1),
+    breaks = seq(0, 15, by = 5),
+  ) + 
+  theme(
+      panel.grid.minor = element_line(color="grey60", size=0.5),
+      panel.grid.major = element_line(color="grey40", size=0.5),
+      panel.background = element_rect(fill="snow2")
+    ) +
+    labs(
+      title = "Percentage of duplicates by language", 
+      x = "Language", 
+      y = "% of Duplicates"
+    )
+
+```
 
 &#x1F53B;&nbsp;_Work in Process_ ... I am still analyzing this data.&nbsp;&#x1F53A;

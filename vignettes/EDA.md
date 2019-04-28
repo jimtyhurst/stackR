@@ -16,6 +16,8 @@ Exploratory Data Analysis
       - [Duplicate question content](#duplicate-question-content)
   - [Exploratory analysis of
     duplicates](#exploratory-analysis-of-duplicates)
+      - [Percentage of duplicates by
+        language](#percentage-of-duplicates-by-language)
 
 🔻 *Work in Process* … 🔺
 
@@ -26,6 +28,7 @@ Source code at: [EDA.Rmd](../vignettes/EDA.Rmd)
 ``` r
 library(stackR)
 library(readr)
+library(forcats)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -184,6 +187,9 @@ it prompts for 3 parameter values:
 
 ``` sql
 -- Duplicate pairs of questions related to a tag.
+-- Derived from Jordan Witte's query:
+--   https://data.stackexchange.com/stackoverflow/query/1029675/duplicate-pairs
+--   https://github.com/Eric-D-Stevens/Data_Science_Meetup_April/blob/master/sql/basic_fetch_duplicate_pairs.sql
 
 DECLARE @PageSize int = ##PageSize##
 DECLARE @PageNumber int = ##PageNumber##
@@ -261,5 +267,81 @@ the bottom of the list (R and Clojure):
   - R
 
 ## Exploratory analysis of duplicates
+
+### Percentage of duplicates by language
+
+``` r
+raw_pcts <- system.file(
+    "extdata", 
+    "duplicates-totals-pct.csv", 
+    package = "stackR"
+  ) %>% 
+  readr::read_csv() %>% 
+  dplyr::mutate(pct_duplicates = (duplicate_posts / total_posts) * 100.0) %>% 
+  dplyr::arrange(desc(pct_duplicates))
+#> Parsed with column specification:
+#> cols(
+#>   language = col_character(),
+#>   total_posts = col_double(),
+#>   duplicate_posts = col_double()
+#> )
+kable(raw_pcts, digits = 2)
+```
+
+| language   | total\_posts | duplicate\_posts | pct\_duplicates |
+| :--------- | -----------: | ---------------: | --------------: |
+| rust       |        11813 |             1333 |           11.28 |
+| bash       |       110927 |             6395 |            5.77 |
+| r          |       285818 |            14234 |            4.98 |
+| c          |       301484 |            14758 |            4.90 |
+| shell      |        69923 |             3126 |            4.47 |
+| c++        |       614289 |            27237 |            4.43 |
+| java       |      1538549 |            64845 |            4.21 |
+| python     |      1153996 |            46415 |            4.02 |
+| php        |      1277793 |            48112 |            3.77 |
+| javascript |      1796439 |            62295 |            3.47 |
+| swift      |       227614 |             7381 |            3.24 |
+| html       |       817665 |            25873 |            3.16 |
+| css        |       582623 |            17404 |            2.99 |
+| c\#        |      1304340 |            38646 |            2.96 |
+| kotlin     |        22023 |              510 |            2.32 |
+| sql        |       488290 |            11227 |            2.30 |
+| typescript |        79466 |             1519 |            1.91 |
+| powershell |        67326 |             1138 |            1.69 |
+| clojure    |        15457 |              194 |            1.26 |
+| elixir     |         6814 |               69 |            1.01 |
+
+``` r
+# Need to sort the language factor by the percentage before plotting.
+sorted_pcts <- raw_pcts %>% 
+  dplyr::mutate(
+    sorted_language = forcats::fct_reorder(
+      language, 
+      pct_duplicates, 
+      .desc = TRUE
+    )
+  )
+  
+sorted_pcts %>%
+  ggplot(aes(x = sorted_language, y = pct_duplicates)) +
+    geom_col() +
+  scale_y_continuous(
+    limits = c(0, 15), 
+    minor_breaks = seq(0, 15, by = 1),
+    breaks = seq(0, 15, by = 5),
+  ) + 
+  theme(
+      panel.grid.minor = element_line(color="grey60", size=0.5),
+      panel.grid.major = element_line(color="grey40", size=0.5),
+      panel.background = element_rect(fill="snow2")
+    ) +
+    labs(
+      title = "Percentage of duplicates by language", 
+      x = "Language", 
+      y = "% of Duplicates"
+    )
+```
+
+![](EDA_files/figure-gfm/sorts_pcts-1.png)<!-- -->
 
 🔻 *Work in Process* … I am still analyzing this data. 🔺
