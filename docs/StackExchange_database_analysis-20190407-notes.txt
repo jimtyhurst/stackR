@@ -1,0 +1,53 @@
+Stack Exchange database
+2019-04-07
+
+Portland Data Science
+http://dive-into.info/
+
+intro:
+questions, answers, comments
+
+brainstorm:
+* something that leads to a good visualization
+* Which day of the week has the most posts?
+  More specifically, what is the distribution of posts by day of the week?
+
+I like this one:
+* What percentage of questions are tagged as duplicate?
+  * Of those, what percentage has a link to the original question?
+  * How many duplicates are produced?
+  * Can we predict duplicates?
+  * Cluster analysis to identify similar questions?
+
+* Which posts are most popular? most viewed?
+  'Posts' has a ViewCount property.
+* Which are the most popular topics?
+
+ideas from other groups:
+* Why are posts flagged? Can we predict which posts will be flagged?
+* Will a question get answered?
+  [JT: What percentage of questions remain unanswered?]
+* Will a question be considered a good one via voting?
+* Given a post, can we predict its tags?
+
+summary:
+(1) Why do posts get flagged?
+Is it predictable?
+Will a question get any responses? Many upvotes?
+> How many duplicate posts actually link to the original?
+
+Python to get data from the Stack Exchange API:
+https://github.com/quill65/stackoverflow/blob/master/stackexchange_stackAPI_example_v1.ipynb
+
+https://bigquery.cloud.google.com/table/bigquery-public-data:stackoverflow.stackoverflow_posts?pli=1
+31,017,889 rows in stackoverflow_posts
+SELECT
+  MIN(creation_date) AS creation_date,
+  MAX(last_activity_date) AS last_activity_date
+FROM
+  [bigquery-public-data:stackoverflow.stackoverflow_posts]
+returns:
+creation_date: 2008-07-31 21:42:52.667 UTC
+last_activity_date: 2016-06-12 04:07:42.853 UTC
+
+44,313,825

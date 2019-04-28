@@ -601,33 +601,222 @@ body {
 <body>
 
 <h1 id="exploratory-data-analysis">Exploratory Data Analysis</h1>
-<p><a href="https://www.jimtyhurst.com/">Jim Tyhurst</a> 2019-04-07</p>
+<p><a href="https://www.jimtyhurst.com/">Jim Tyhurst</a> 2019-04-28</p>
 <ul>
-<li><a href="#configuration">Configuration</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#package-dependencies">Package dependencies</a></li>
+<li><a href="#data-source">Data source</a>
+<ul>
+<li><a href="#attribution-of-data">Attribution of data</a></li>
+<li><a href="#schema">Schema</a></li>
+<li><a href="#sql-access-to-stack-exchange-data">SQL access to Stack Exchange data</a></li>
+<li><a href="#other-sources-of-stack-exchange-data-are-available">Other sources of Stack Exchange data are available</a></li>
+</ul></li>
+<li><a href="#data-preparation">Data preparation</a>
+<ul>
+<li><a href="#duplicate-question-counts">Duplicate question counts</a></li>
+<li><a href="#duplicate-question-content">Duplicate question content</a></li>
+</ul></li>
+<li><a href="#exploratory-analysis-of-duplicates">Exploratory analysis of duplicates</a></li>
 </ul>
 <p>🔻 <em>Work in Process</em> … 🔺</p>
 <p>Source code at: <a href="../vignettes/EDA.Rmd">EDA.Rmd</a></p>
-<h2 id="configuration">Configuration</h2>
+<h2 id="package-dependencies">Package dependencies</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(stackR)</a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="kw">library</span>(glue)</a>
-<a class="sourceLine" id="cb1-3" title="3"><span class="kw">library</span>(tidyverse)</a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="co">#&gt; ── Attaching packages ────────────────────</span></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="co">#&gt; ✔ ggplot2 3.1.0       ✔ dplyr   0.8.0.1</span></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="co">#&gt; ✔ tidyr   0.8.3       ✔ stringr 1.4.0  </span></a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="co">#&gt; ✔ purrr   0.3.2       ✔ forcats 0.4.0</span></a>
-<a class="sourceLine" id="cb1-8" title="8"><span class="co">#&gt; ── Conflicts ──── tidyverse_conflicts() ──</span></a>
-<a class="sourceLine" id="cb1-9" title="9"><span class="co">#&gt; ✖ dplyr::collapse() masks glue::collapse()</span></a>
-<a class="sourceLine" id="cb1-10" title="10"><span class="co">#&gt; ✖ dplyr::filter()   masks stats::filter()</span></a>
-<a class="sourceLine" id="cb1-11" title="11"><span class="co">#&gt; ✖ dplyr::lag()      masks stats::lag()</span></a>
-<a class="sourceLine" id="cb1-12" title="12"><span class="kw">library</span>(lubridate)</a>
-<a class="sourceLine" id="cb1-13" title="13"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb1-14" title="14"><span class="co">#&gt; Attaching package: &#39;lubridate&#39;</span></a>
-<a class="sourceLine" id="cb1-15" title="15"><span class="co">#&gt; The following object is masked from &#39;package:base&#39;:</span></a>
-<a class="sourceLine" id="cb1-16" title="16"><span class="co">#&gt; </span></a>
-<a class="sourceLine" id="cb1-17" title="17"><span class="co">#&gt;     date</span></a></code></pre></div>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">library</span>(readr)</a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="kw">library</span>(ggplot2)</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="kw">library</span>(lubridate)</a></code></pre></div>
+<h2 id="data-source">Data source</h2>
+<h3 id="attribution-of-data">Attribution of data</h3>
+<p>Data was obtained from <a href="https://data.stackexchange.com/help">StackExchange</a>. They license their data with the <a href="https://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike</a> license.</p>
+<p>See Stack Overflow’s blog post, “<a href="https://stackoverflow.blog/2009/06/25/attribution-required/">Attribution Required</a>”.</p>
+<h3 id="schema">Schema</h3>
+<ul>
+<li><a href="https://sedeschema.github.io/">Stack Exchange Data Explorer Schema ERD</a>: <a href="https://github.com/leerssej/SEDESchema">reverse engineered from information_schema.columns using a Python script and DbSchema</a></li>
+<li><a href="https://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede/2678">Database schema documentation for the public data dump and SEDE</a></li>
+</ul>
+<h3 id="sql-access-to-stack-exchange-data">SQL access to Stack Exchange data</h3>
+<p><a href="https://data.stackexchange.com/help">Stack Exchange Data Explorer</a> is an online tool for accessing Stack Exchange data. I used this tool to count posts having certain characteristics and to download posts satisfying certain conditions.</p>
+<h3 id="other-sources-of-stack-exchange-data-are-available">Other sources of Stack Exchange data are available</h3>
+<p>I explored these data sources briefly, but did not use them for this analysis.</p>
+<h4 id="zipped-data-files">Zipped data files</h4>
+<p>Rather than trying to install these large files on my local machine, I decided to run SQL queries against the original data using the <a href="https://data.stackexchange.com/help">Stack Exchange Data Explorer</a> and then download subsets of data for processing locally.</p>
+<ul>
+<li><a href="https://archive.org/download/stackexchange/">Files for stackexchange</a></li>
+<li><a href="https://ia800107.us.archive.org/27/items/stackexchange/readme.txt">Documentation of the CSV files</a></li>
+</ul>
+<p>For example, as of 2019-04-07 there are 7 CSV files for posts in Stack Overflow:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Last modified</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>stackoverflow.com-Badges.7z</td>
+<td>04-Mar-2019 14:04</td>
+<td>218.8M</td>
+</tr>
+<tr class="even">
+<td>stackoverflow.com-Comments.7z</td>
+<td>04-Mar-2019 14:25</td>
+<td>3.9G</td>
+</tr>
+<tr class="odd">
+<td>stackoverflow.com-PostHistory.7z</td>
+<td>04-Mar-2019 15:26</td>
+<td>23.0G</td>
+</tr>
+<tr class="even">
+<td>stackoverflow.com-PostLinks.7z</td>
+<td>04-Mar-2019 15:27</td>
+<td>76.8M</td>
+</tr>
+<tr class="odd">
+<td>stackoverflow.com-Posts.7z</td>
+<td>04-Mar-2019 16:32</td>
+<td>13.2G</td>
+</tr>
+<tr class="even">
+<td>stackoverflow.com-Tags.7z</td>
+<td>04-Mar-2019 16:32</td>
+<td>768.9K</td>
+</tr>
+<tr class="odd">
+<td>stackoverflow.com-Users.7z</td>
+<td>04-Mar-2019 16:33</td>
+<td>431.4M</td>
+</tr>
+<tr class="even">
+<td>stackoverflow.com-Votes.7z</td>
+<td>04-Mar-2019 16:38</td>
+<td>997.3M</td>
+</tr>
+</tbody>
+</table>
+<h4 id="google-bigquery">Google BigQuery</h4>
+<p>This extract of the Stack Exchange data only covers 2008-07-31 to 2016-06-12, whereas the data available through the <a href="https://data.stackexchange.com/help">Stack Exchange Data Explorer</a> covers 2008-07-31 to 2019-04-07. So I decided not to use Google BigQuery, since the data does not cover recent years.</p>
+<ul>
+<li>Blog post: “<a href="https://cloud.google.com/blog/products/gcp/google-bigquery-public-datasets-now-include-stack-overflow-q-a">Google BigQuery public datasets now include Stack Overflow Q&amp;A</a>”</li>
+<li>Compose Query: <a href="https://bigquery.cloud.google.com/dataset/bigquery-public-data:stackoverflow?pli=1">bigquery-public-data:stackoverflow</a></li>
+</ul>
+<p>Note that the <a href="https://bigquery.cloud.google.com/dataset/bigquery-public-data:stackoverflow?pli=1">Google BigQuery table structure</a> is slightly <em>different</em> than the <a href="https://sedeschema.github.io/">schema used by Stack Exchange</a>. For example, the field names in Google BigQuery follow a snake-case naming convention (post_history_type_id), whereas the Stack Exchange database uses camel-case (PostHistoryTypeId).</p>
+<p>** Sample Query **</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><a class="sourceLine" id="cb2-1" title="1"><span class="co">-- Google BigQuery</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="co">-- Counts the number of Posts closed as a duplicate.</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> d.<span class="kw">id</span>) <span class="kw">AS</span> n_closed_duplicate_questions</a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="kw">FROM</span> [bigquery<span class="op">-</span><span class="kw">public</span><span class="op">-</span><span class="kw">data</span><span class="ch">:stackoverflow</span>.posts_questions] d  <span class="co">-- d=duplicate</span></a>
+<a class="sourceLine" id="cb2-5" title="5"><span class="kw">LEFT</span> <span class="kw">JOIN</span> [bigquery<span class="op">-</span><span class="kw">public</span><span class="op">-</span><span class="kw">data</span><span class="ch">:stackoverflow</span>.post_history] ph <span class="kw">ON</span> ph.post_id <span class="op">=</span> d.<span class="kw">id</span></a>
+<a class="sourceLine" id="cb2-6" title="6"><span class="kw">LEFT</span> <span class="kw">JOIN</span> [bigquery<span class="op">-</span><span class="kw">public</span><span class="op">-</span><span class="kw">data</span><span class="ch">:stackoverflow</span>.post_links] pl <span class="kw">ON</span> pl.post_id <span class="op">=</span> d.<span class="kw">id</span></a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="kw">LEFT</span> <span class="kw">JOIN</span> [bigquery<span class="op">-</span><span class="kw">public</span><span class="op">-</span><span class="kw">data</span><span class="ch">:stackoverflow</span>.posts_questions] o <span class="kw">ON</span> o.<span class="kw">id</span> <span class="op">=</span> pl.related_post_id  <span class="co">-- o=original</span></a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="kw">WHERE</span></a>
+<a class="sourceLine" id="cb2-9" title="9">  d.post_type_id <span class="op">=</span> <span class="dv">1</span>  <span class="co">-- 1=Question</span></a>
+<a class="sourceLine" id="cb2-10" title="10">  <span class="kw">AND</span> pl.link_type_id <span class="op">=</span> <span class="dv">3</span>  <span class="co">-- 3=duplicate</span></a>
+<a class="sourceLine" id="cb2-11" title="11">  <span class="kw">AND</span> ph.post_history_type_id <span class="op">=</span> <span class="dv">10</span>  <span class="co">-- 10=Post Closed</span></a></code></pre></div>
 <h2 id="data-preparation">Data preparation</h2>
-<p>TBD …</p>
+<h3 id="duplicate-question-counts">Duplicate question counts</h3>
+<p>I used two queries to count total questions and duplicate questions for 20 of the <a href="https://insights.stackoverflow.com/survey/2019#technology-_-programming-scripting-and-markup-languages">25 most popular programming languages</a>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sql"><code class="sourceCode sql"><a class="sourceLine" id="cb3-1" title="1"><span class="co">-- Counts total number of question posts with a given language tag.</span></a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">SELECT</span></a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span>(op.<span class="kw">Id</span>))</a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="kw">FROM</span> posts op </a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="kw">WHERE</span></a>
+<a class="sourceLine" id="cb3-6" title="6">  op.posttypeid <span class="op">=</span> <span class="dv">1</span>            <span class="co">-- Question post</span></a>
+<a class="sourceLine" id="cb3-7" title="7">  <span class="kw">AND</span> op.Tags <span class="kw">like</span> <span class="st">&#39;%&lt;java&gt;%&#39;</span>  <span class="co">-- Language tag</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sql"><code class="sourceCode sql"><a class="sourceLine" id="cb4-1" title="1"><span class="co">-- Counts number of question posts marked as a duplicate for a given language tag.</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="kw">DISTINCT</span> dp.<span class="kw">id</span>)</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="kw">FROM</span> posts dp</a>
+<a class="sourceLine" id="cb4-4" title="4">  <span class="kw">JOIN</span> postlinks pl <span class="kw">ON</span> dp.<span class="kw">id</span> <span class="op">=</span> pl.postid</a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="kw">WHERE</span></a>
+<a class="sourceLine" id="cb4-6" title="6">  dp.posttypeid <span class="op">=</span> <span class="dv">1</span> <span class="co">-- Question post</span></a>
+<a class="sourceLine" id="cb4-7" title="7">  <span class="kw">AND</span> pl.linktypeid <span class="op">=</span> <span class="dv">3</span> <span class="co">-- duplicate</span></a>
+<a class="sourceLine" id="cb4-8" title="8">  <span class="kw">AND</span> dp.tags <span class="kw">like</span> <span class="st">&#39;%&lt;java&gt;%&#39;</span>;</a></code></pre></div>
+<p>The resulting table of data is available as a CSV file, <code>duplicates-totals-pct.csv</code> (<a href="../inst/extdata/duplicates-totals-pct.csv">download</a>).</p>
+<h3 id="duplicate-question-content">Duplicate question content</h3>
+<p>The <a href="https://data.stackexchange.com/stackoverflow/query/1029995/duplicate-pairs-of-questions-related-to-a-tag?PageSize=25&amp;PageNumber=1&amp;Tags=%27%25%3Cpython%3E%25%27">following query</a> was used to obtain data for duplicate posts. When you run the query in the <a href="https://data.stackexchange.com/help">Stack Exchange Data Explorer</a>, it prompts for 3 parameter values:</p>
+<ul>
+<li>PageSize : Number of rows to return. 50,000 seems to be the maximum that will be returned from any one query.</li>
+<li>Page Number : Enables you to download a large dataset by retrieving one page at a time. For example, use <code>1</code> for the first “page”, i.e. subset of data, <code>2</code> for the second page, etc.</li>
+<li>Tags : A string to match the <code>posts.tags</code> field. For example, <code>&#39;%&lt;python&gt;%&#39;</code> will match an instance of the <code>tags</code> field that contains the <code>&lt;python&gt;</code> tag. Note: tags all seem to be lower case and surrounded by <code>&lt;</code> … <code>&gt;</code>.</li>
+</ul>
+<!-- end list -->
+
+<div class="sourceCode" id="cb5"><pre class="sourceCode sql"><code class="sourceCode sql"><a class="sourceLine" id="cb5-1" title="1"><span class="co">-- Duplicate pairs of questions related to a tag.</span></a>
+<a class="sourceLine" id="cb5-2" title="2"></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="kw">DECLARE</span> @PageSize <span class="dt">int</span> <span class="op">=</span> ##PageSize##</a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="kw">DECLARE</span> @PageNumber <span class="dt">int</span> <span class="op">=</span> ##PageNumber##</a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="kw">DECLARE</span> @Tags <span class="dt">nvarchar</span> <span class="op">=</span> ##Tags##</a>
+<a class="sourceLine" id="cb5-6" title="6"></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="kw">SELECT</span> </a>
+<a class="sourceLine" id="cb5-8" title="8">  op.<span class="kw">Id</span> OriginalPostId , </a>
+<a class="sourceLine" id="cb5-9" title="9">  op.PostTypeId OriginalPostPostTypeId , </a>
+<a class="sourceLine" id="cb5-10" title="10">  op.AcceptedAnswerId OriginalPostAcceptedAnswerId , </a>
+<a class="sourceLine" id="cb5-11" title="11">  op.ParentId OriginalPostParentId , </a>
+<a class="sourceLine" id="cb5-12" title="12">  op.CreationDate OriginalPostCreationDate , </a>
+<a class="sourceLine" id="cb5-13" title="13">  op.DeletionDate OriginalPostDeletionDate , </a>
+<a class="sourceLine" id="cb5-14" title="14">  op.Score OriginalPostScore , </a>
+<a class="sourceLine" id="cb5-15" title="15">  op.ViewCount OriginalPostViewCount , </a>
+<a class="sourceLine" id="cb5-16" title="16">  op.<span class="kw">Body</span> OriginalPostBody , </a>
+<a class="sourceLine" id="cb5-17" title="17">  op.OwnerUserId OriginalPostOwnerUserId , </a>
+<a class="sourceLine" id="cb5-18" title="18">  op.OwnerDisplayName OriginalPostOwnerDisplayName , </a>
+<a class="sourceLine" id="cb5-19" title="19">  op.LastEditorUserId OriginalPostLastEditorUserId , </a>
+<a class="sourceLine" id="cb5-20" title="20">  op.LastEditorDisplayName OriginalPostLastEditorDisplayName , </a>
+<a class="sourceLine" id="cb5-21" title="21">  op.LastEditDate OriginalPostLastEditDate , </a>
+<a class="sourceLine" id="cb5-22" title="22">  op.LastActivityDate OriginalPostLastActivityDate , </a>
+<a class="sourceLine" id="cb5-23" title="23">  op.Title OriginalPostTitle , </a>
+<a class="sourceLine" id="cb5-24" title="24">  op.Tags OriginalPostTags , </a>
+<a class="sourceLine" id="cb5-25" title="25">  op.AnswerCount OriginalPostAnswerCount , </a>
+<a class="sourceLine" id="cb5-26" title="26">  op.CommentCount OriginalPostCommentCount , </a>
+<a class="sourceLine" id="cb5-27" title="27">  op.FavoriteCount OriginalPostFavoriteCount , </a>
+<a class="sourceLine" id="cb5-28" title="28">  op.ClosedDate OriginalPostClosedDate , </a>
+<a class="sourceLine" id="cb5-29" title="29">  op.CommunityOwnedDate OriginalPostCommunityOwnedDate , </a>
+<a class="sourceLine" id="cb5-30" title="30"></a>
+<a class="sourceLine" id="cb5-31" title="31">  dupl.<span class="kw">Id</span> DuplicatePostId , </a>
+<a class="sourceLine" id="cb5-32" title="32">  dupl.PostTypeId DuplicatePostPostTypeId , </a>
+<a class="sourceLine" id="cb5-33" title="33">  dupl.AcceptedAnswerId DuplicatePostAcceptedAnswerId , </a>
+<a class="sourceLine" id="cb5-34" title="34">  dupl.ParentId DuplicatePostParentId , </a>
+<a class="sourceLine" id="cb5-35" title="35">  dupl.CreationDate DuplicatePostCreationDate , </a>
+<a class="sourceLine" id="cb5-36" title="36">  dupl.DeletionDate DuplicatePostDeletionDate , </a>
+<a class="sourceLine" id="cb5-37" title="37">  dupl.Score DuplicatePostScore , </a>
+<a class="sourceLine" id="cb5-38" title="38">  dupl.ViewCount DuplicatePostViewCount , </a>
+<a class="sourceLine" id="cb5-39" title="39">  dupl.<span class="kw">Body</span> DuplicatePostBody , </a>
+<a class="sourceLine" id="cb5-40" title="40">  dupl.OwnerUserId DuplicatePostOwnerUserId , </a>
+<a class="sourceLine" id="cb5-41" title="41">  dupl.OwnerDisplayName DuplicatePostOwnerDisplayName , </a>
+<a class="sourceLine" id="cb5-42" title="42">  dupl.LastEditorUserId DuplicatePostLastEditorUserId , </a>
+<a class="sourceLine" id="cb5-43" title="43">  dupl.LastEditorDisplayName DuplicatePostLastEditorDisplayName , </a>
+<a class="sourceLine" id="cb5-44" title="44">  dupl.LastEditDate DuplicatePostLastEditDate , </a>
+<a class="sourceLine" id="cb5-45" title="45">  dupl.LastActivityDate DuplicatePostLastActivityDate , </a>
+<a class="sourceLine" id="cb5-46" title="46">  dupl.Title DuplicatePostTitle , </a>
+<a class="sourceLine" id="cb5-47" title="47">  dupl.Tags DuplicatePostTags , </a>
+<a class="sourceLine" id="cb5-48" title="48">  dupl.AnswerCount DuplicatePostAnswerCount , </a>
+<a class="sourceLine" id="cb5-49" title="49">  dupl.CommentCount DuplicatePostCommentCount , </a>
+<a class="sourceLine" id="cb5-50" title="50">  dupl.FavoriteCount DuplicatePostFavoriteCount , </a>
+<a class="sourceLine" id="cb5-51" title="51">  dupl.ClosedDate DuplicatePostClosedDate , </a>
+<a class="sourceLine" id="cb5-52" title="52">  dupl.CommunityOwnedDate DuplicatePostCommunityOwnedDate</a>
+<a class="sourceLine" id="cb5-53" title="53"><span class="kw">FROM</span> posts op </a>
+<a class="sourceLine" id="cb5-54" title="54">  <span class="kw">JOIN</span> postlinks pl <span class="kw">ON</span> op.<span class="kw">id</span> <span class="op">=</span> pl.relatedpostid</a>
+<a class="sourceLine" id="cb5-55" title="55">  <span class="kw">JOIN</span> posts dupl <span class="kw">ON</span> pl.postid <span class="op">=</span> dupl.<span class="kw">id</span></a>
+<a class="sourceLine" id="cb5-56" title="56"><span class="kw">WHERE</span></a>
+<a class="sourceLine" id="cb5-57" title="57">  op.posttypeid <span class="op">=</span> <span class="dv">1</span>      <span class="co">-- Question post</span></a>
+<a class="sourceLine" id="cb5-58" title="58">  <span class="kw">AND</span> pl.linktypeid <span class="op">=</span> <span class="dv">3</span>  <span class="co">-- duplicate</span></a>
+<a class="sourceLine" id="cb5-59" title="59">  <span class="kw">AND</span> dupl.tags <span class="kw">like</span> @Tags  <span class="co">-- e.g. &#39;%&lt;python&gt;%&#39; for &quot;contains python&quot;</span></a>
+<a class="sourceLine" id="cb5-60" title="60"><span class="kw">ORDER</span> <span class="kw">BY</span> op.<span class="kw">Id</span> </a>
+<a class="sourceLine" id="cb5-61" title="61">  OFFSET @PageSize <span class="op">*</span> (@PageNumber <span class="op">-</span> <span class="dv">1</span>) <span class="kw">ROWS</span></a>
+<a class="sourceLine" id="cb5-62" title="62">  FETCH <span class="kw">NEXT</span> @PageSize <span class="kw">ROWS</span> <span class="kw">ONLY</span>;</a></code></pre></div>
+<p>I used this query to download duplicates for 6 of the <a href="https://insights.stackoverflow.com/survey/2019#technology-_-programming-scripting-and-markup-languages">25 most popular programming languages</a>, choosing languages from the most popular (JavaScript) to language near the bottom of the list (R and Clojure):</p>
+<ul>
+<li>C#</li>
+<li>Clojure</li>
+<li>Java</li>
+<li>JavaScript</li>
+<li>Python</li>
+<li>R</li>
+</ul>
+<h2 id="exploratory-analysis-of-duplicates">Exploratory analysis of duplicates</h2>
+<p>🔻 <em>Work in Process</em> … I am still analyzing this data. 🔺</p>
 
 </body>
 </html>
