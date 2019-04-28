@@ -1,0 +1,120 @@
+-- This query is a slight modification of:
+-- https://data.stackexchange.com/stackoverflow/query/992019/unmerged-answered-self-duplicates-list-of-stub-qs
+--   Removed the WHERE clause that checked OP from source (stub) = OP from destination (master)
+--   Added TOP constraint.
+--   Added DISTINCT
+--   ORDER BY DESC, rather than ASC
+WITH stub_list AS
+(SELECT p.Id,
+        p.Score,
+        pl.RelatedPostId -- Post Destination (master)
+ FROM Posts p
+ JOIN PostLinks pl ON pl.PostId = p.Id
+ WHERE p.PostTypeId = 1 -- questions.
+       AND EXISTS 
+       (
+        SELECT *
+        FROM PostHistory ph
+        WHERE ph.PostId = p.Id
+        AND ph.PostHistoryTypeId IN (10) -- Post Closed (duplicate)     
+      )
+      AND pl.LinkTypeId = 3 -- duplicate.
+      AND p.AnswerCount > 0 -- stub question has answers
+)
+SELECT DISTINCT TOP(15)
+  s.Id AS [Post Link],
+  s.Score
+FROM stub_list s
+JOIN Posts p ON p.Id = s.RelatedPostId  -- p is "original" Post of which s is a duplicate
+WHERE p.AnswerCount > 0 -- target question has answers
+ORDER BY s.Score DESC; -- high qualities first
+
+I experimented with variations of this query: Unmerged answered self-duplicates (list of stub Qs) (https://data.stackexchange.com/stackoverflow/query/992019/unmerged-answered-self-duplicates-list-of-stub-qs), which returned 8626 rows returned in 4395 ms. I clicked on a few of the links in the results. Each of those questions had a highlight at the top that said, "This question already has an answer here:" or "Possible Duplicate:" with a link to another question. I guess I never noticed this highlighted block before when searching in Stack Overflow.
+
+--------------------------------------------
+-- This query is a slight modification of:
+-- https://data.stackexchange.com/stackoverflow/query/992019/unmerged-answered-self-duplicates-list-of-stub-qs
+--   Removed the WHERE clause that checked OP from source (stub) = OP from destination (master)
+--   Added TOP constraint.
+--   Added DISTINCT
+--   ORDER BY DESC, rather than ASC
+WITH stub_list AS
+(SELECT p.Id,
+        p.Score,
+        pl.RelatedPostId -- Post Destination (master)
+ FROM Posts p
+ JOIN PostLinks pl ON pl.PostId = p.Id
+ WHERE p.PostTypeId = 1 -- questions.
+       AND EXISTS 
+       (
+        SELECT *
+        FROM PostHistory ph
+        WHERE ph.PostId = p.Id
+        AND ph.PostHistoryTypeId IN (10) -- Post Closed (duplicate)     
+      )
+      AND pl.LinkTypeId = 3 -- duplicate.
+      AND p.AnswerCount > 0 -- stub question has answers
+)
+SELECT COUNT(s.Id) AS 'closed as duplicates (with answers)'
+FROM stub_list s
+JOIN Posts p ON p.Id = s.RelatedPostId  -- p is "original" Post of which s is a duplicate
+WHERE p.AnswerCount > 0 -- target question has answers
+
+Results: 325,788 returned in 1746 ms
+
+--------------------------------------------
+-- https://data.stackexchange.com/stackoverflow/query/1025720/number-of-posts-closed-as-duplicates
+-- Number of Posts closed as duplicates
+-- This query is derived from:
+-- https://data.stackexchange.com/stackoverflow/query/992019/unmerged-answered-self-duplicates-list-of-stub-qs
+WITH stub_list AS
+(SELECT p.Id,
+        p.Score,
+        pl.RelatedPostId -- Post Destination (master)
+ FROM Posts p
+ JOIN PostLinks pl ON pl.PostId = p.Id
+ WHERE p.PostTypeId = 1 -- questions.
+       AND EXISTS 
+       (
+        SELECT *
+        FROM PostHistory ph
+        WHERE ph.PostId = p.Id
+        AND ph.PostHistoryTypeId IN (10) -- Post Closed
+      )
+      AND pl.LinkTypeId = 3 -- duplicate.
+)
+SELECT COUNT(s.Id) AS 'closed as duplicate'
+FROM stub_list s
+JOIN Posts p ON p.Id = s.RelatedPostId  -- p is the "original" Post of which s is a duplicate
+
+Results: 478,561 returned in 2909 ms
+
+--------------------------------------------
+-- https://data.stackexchange.com/stackoverflow/query/1025742/number-of-closed-duplicate-questions
+-- Counts the number of Posts closed as a duplicate.
+SELECT COUNT(DISTINCT d.Id)
+FROM Posts d  -- d=duplicate
+LEFT JOIN PostHistory ph ON ph.PostId = d.Id
+LEFT JOIN PostLinks pl ON pl.PostId = d.Id
+LEFT JOIN Posts o ON o.Id = pl.RelatedPostId  -- o=original
+WHERE
+  d.PostTypeId = 1  -- 1=Question
+  AND pl.LinkTypeId = 3  -- 3=duplicate
+  AND ph.PostHistoryTypeId = 10  -- 10=Post Closed
+
+Results: 440,871 returned in 1420 ms.
+
+--------------------------------------------
+-- Google BigQuery
+-- Counts the number of Posts closed as a duplicate.
+SELECT COUNT(DISTINCT d.id) AS n_closed_duplicate_questions
+FROM [bigquery-public-data:stackoverflow.posts_questions] d  -- d=duplicate
+LEFT JOIN [bigquery-public-data:stackoverflow.post_history] ph ON ph.post_id = d.id
+LEFT JOIN [bigquery-public-data:stackoverflow.post_links] pl ON pl.post_id = d.id
+LEFT JOIN [bigquery-public-data:stackoverflow.posts_questions] o ON o.id = pl.related_post_id  -- o=original
+WHERE
+  d.post_type_id = 1  -- 1=Question
+  AND pl.link_type_id = 3  -- 3=duplicate
+  AND ph.post_history_type_id = 10  -- 10=Post Closed
+
+--------------------------------------------
