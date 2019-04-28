@@ -230,7 +230,8 @@ kable(raw_pcts, digits = 2)
 
 
 ```{r sorts_pcts}
-# Need to sort the language factor by the percentage before plotting.
+# Adds 'sorted_language' column, sorted by the percentage,
+# for plotting.
 sorted_pcts <- raw_pcts %>% 
   dplyr::mutate(
     sorted_language = forcats::fct_reorder(
@@ -259,6 +260,41 @@ sorted_pcts %>%
       y = "% of Duplicates"
     )
 
+```
+
+### Distribution of number of duplicates
+
+Read the downloaded duplicates for the `R` language:
+
+```{r reads_dup_content, message=FALSE}
+dups <- system.file(
+    "extdata", 
+    "duplicates_r.csv", 
+    package = "stackR"
+  ) %>% 
+  readr::read_csv() 
+print(dim(dups))
+```
+
+Bin the number of duplicates per original question to analyze the distribution of number of duplicates per question:
+
+```{r duplicates_distribution}
+dup_distr <- dups %>% 
+  dplyr::group_by(OriginalPostId) %>% 
+  dplyr::summarize(n = n()) %>% 
+  dplyr::select(OriginalPostId, n) %>% 
+  dplyr::group_by(n) %>% 
+  dplyr::summarize(qty = n()) %>% 
+  dplyr::arrange(n)
+kable(dup_distr)
+```
+
+Plot the distribution of the number of duplicates per original question:
+
+```{r plots_distribution}
+dup_distr %>% 
+  ggplot(aes(x = n, y = qty)) +
+    geom_point()
 ```
 
 &#x1F53B;&nbsp;_Work in Process_ ... I am still analyzing this data.&nbsp;&#x1F53A;
