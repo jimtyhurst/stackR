@@ -18,6 +18,8 @@ Exploratory Data Analysis
     duplicates](#exploratory-analysis-of-duplicates)
       - [Percentage of duplicates by
         language](#percentage-of-duplicates-by-language)
+      - [Distribution of number of
+        duplicates](#distribution-of-number-of-duplicates)
 
 🔻 *Work in Process* … 🔺
 
@@ -312,7 +314,8 @@ kable(raw_pcts, digits = 2)
 | elixir     |         6814 |               69 |            1.01 |
 
 ``` r
-# Need to sort the language factor by the percentage before plotting.
+# Adds 'sorted_language' column, sorted by the percentage,
+# for plotting.
 sorted_pcts <- raw_pcts %>% 
   dplyr::mutate(
     sorted_language = forcats::fct_reorder(
@@ -343,5 +346,101 @@ sorted_pcts %>%
 ```
 
 ![](EDA_files/figure-gfm/sorts_pcts-1.png)<!-- -->
+
+### Distribution of number of duplicates
+
+Read the downloaded duplicates for the `R` language:
+
+``` r
+dups <- system.file(
+    "extdata", 
+    "duplicates_r.csv", 
+    package = "stackR"
+  ) %>% 
+  readr::read_csv() 
+print(dim(dups))
+#> [1] 15453    44
+```
+
+Plot the distribution of the number of duplicates per original question:
+
+``` r
+dup_distr <- dups %>% 
+  dplyr::group_by(OriginalPostId) %>% 
+  dplyr::summarize(n = n()) %>% 
+  dplyr::select(OriginalPostId, n) %>% 
+  dplyr::group_by(n) %>% 
+  dplyr::summarize(qty = n()) %>% 
+  dplyr::arrange(n)
+kable(dup_distr)
+```
+
+|   n |  qty |
+| --: | ---: |
+|   1 | 5006 |
+|   2 | 1004 |
+|   3 |  398 |
+|   4 |  179 |
+|   5 |  106 |
+|   6 |   49 |
+|   7 |   52 |
+|   8 |   31 |
+|   9 |   22 |
+|  10 |   25 |
+|  11 |   11 |
+|  12 |   14 |
+|  13 |    6 |
+|  14 |    7 |
+|  15 |   11 |
+|  16 |    5 |
+|  17 |    6 |
+|  18 |    5 |
+|  19 |    5 |
+|  20 |    4 |
+|  21 |    2 |
+|  22 |    8 |
+|  23 |    2 |
+|  24 |    2 |
+|  25 |    3 |
+|  26 |    2 |
+|  27 |    1 |
+|  29 |    3 |
+|  30 |    2 |
+|  31 |    5 |
+|  32 |    1 |
+|  36 |    2 |
+|  38 |    1 |
+|  39 |    3 |
+|  40 |    3 |
+|  44 |    1 |
+|  47 |    1 |
+|  48 |    2 |
+|  50 |    1 |
+|  51 |    2 |
+|  52 |    2 |
+|  55 |    1 |
+|  57 |    1 |
+|  59 |    1 |
+|  62 |    2 |
+|  64 |    1 |
+|  71 |    1 |
+|  73 |    1 |
+|  88 |    1 |
+|  99 |    1 |
+| 100 |    1 |
+| 102 |    1 |
+| 136 |    1 |
+| 140 |    1 |
+| 188 |    1 |
+| 287 |    1 |
+| 335 |    1 |
+
+``` r
+dup_distr %>% 
+  ggplot(aes(x = n, y = qty)) +
+    geom_point()
+```
+
+![](EDA_files/figure-gfm/plots_distribution-1.png)<!-- -->
 
 🔻 *Work in Process* … I am still analyzing this data. 🔺
